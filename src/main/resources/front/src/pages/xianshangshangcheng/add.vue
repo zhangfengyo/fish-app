@@ -1,0 +1,792 @@
+﻿
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<template>
+	<div class="add-update-preview">
+		<el-form
+			class="add-update-form"
+			ref="ruleForm"
+			:model="ruleForm"
+			:rules="rules"
+			label-width="200px"
+			>
+			<el-form-item class="add-item" label="鍟嗗搧鍚嶇О" prop="shangpinmingcheng">
+				<el-input v-model="ruleForm.shangpinmingcheng" 
+					placeholder="鍟嗗搧鍚嶇О" clearable :readonly="ro.shangpinmingcheng"></el-input>
+			</el-form-item>
+			<el-form-item class="add-item"  label="鍟嗗搧鍒嗙被" prop="shangpinfenlei">
+				<el-select v-model="ruleForm.shangpinfenlei" placeholder="璇烽€夋嫨鍟嗗搧鍒嗙被" :disabled="ro.shangpinfenlei"  filterable>
+					<el-option
+						v-for="(item,index) in shangpinfenleiOptions"
+						:key="index"
+						:label="item"
+						:value="item">
+					</el-option>
+				</el-select>
+			</el-form-item>
+			<el-form-item class="add-item" label="鍟嗗搧鍥剧墖" v-if="type!='cross' || (type=='cross' && !ro.shangpintupian)" prop="shangpintupian">
+				<file-upload
+					tip="鐐瑰嚮涓婁紶鍟嗗搧鍥剧墖"
+					action="file/upload"
+					:limit="3"
+					:multiple="true"
+					:disabled="ro.shangpintupian"
+					:fileUrls="ruleForm.shangpintupian?ruleForm.shangpintupian:''"
+					@change="shangpintupianUploadChange"
+					></file-upload>
+			</el-form-item>
+			<el-form-item class="add-item" v-else label="鍟嗗搧鍥剧墖" prop="shangpintupian">
+				<img v-if="ruleForm.shangpintupian.substring(0,4)=='http'" class="upload-img" v-bind:key="index" :src="ruleForm.shangpintupian.split(',')[0]">
+				<img v-else class="upload-img" v-bind:key="index" v-for="(item,index) in ruleForm.shangpintupian.split(',')" :src="baseUrl+item">
+			</el-form-item>
+			<el-form-item class="add-item" label="鍟嗗搧鍝佺墝" prop="shangpinpinpai">
+				<el-input v-model="ruleForm.shangpinpinpai" 
+					placeholder="鍟嗗搧鍝佺墝" clearable :readonly="ro.shangpinpinpai"></el-input>
+			</el-form-item>
+			<el-form-item class="add-item" label="鍟嗗搧瑙勬牸" prop="shangpinguige">
+				<el-input v-model="ruleForm.shangpinguige" 
+					placeholder="鍟嗗搧瑙勬牸" clearable :readonly="ro.shangpinguige"></el-input>
+			</el-form-item>
+			<el-form-item class="add-item" label="鐢熶骇鍘傚" prop="shengchanchangjia">
+				<el-input v-model="ruleForm.shengchanchangjia" 
+					placeholder="鐢熶骇鍘傚" clearable :readonly="ro.shengchanchangjia"></el-input>
+			</el-form-item>
+			<el-form-item class="add-item" label="鍗曢檺" prop="onelimittimes">
+				<el-input v-model.number="ruleForm.onelimittimes" 
+					placeholder="鍗曢檺" clearable :readonly="ro.onelimittimes"></el-input>
+			</el-form-item>
+			<el-form-item class="add-item" label="搴撳瓨" prop="alllimittimes">
+				<el-input v-model.number="ruleForm.alllimittimes" 
+					placeholder="搴撳瓨" clearable :readonly="ro.alllimittimes"></el-input>
+			</el-form-item>
+			<el-form-item class="add-item" label="浠锋牸" prop="price">
+				<el-input-number v-model="ruleForm.price" placeholder="浠锋牸" :disabled="ro.price"></el-input-number>
+			</el-form-item>
+			<el-form-item class="add-item" label="鍟嗗搧璇︽儏" prop="shangpinxiangqing">
+				<editor 
+					v-model="ruleForm.shangpinxiangqing" 
+					class="editor" 
+					myQuillEditor="shangpinxiangqing"
+					action="file/upload">
+				</editor>
+			</el-form-item>
+
+			<el-form-item class="add-btn-item">
+				<el-button class="submitBtn"  type="primary" @click="onSubmit(null)">
+					<span class="icon iconfont icon-xiugai17"></span>
+					<span class="text">鎻愪氦淇℃伅</span>
+				</el-button>
+				<el-button class="closeBtn" @click="back()">
+					<span class="icon iconfont icon-shanchu8"></span>
+					<span class="text">鍙栨秷</span>
+				</el-button>
+			</el-form-item>
+		</el-form>
+	</div>
+</template>
+
+<script>
+	export default {
+		data() {
+			return {
+				id: '',
+				baseUrl: '',
+				ro:{
+					shangpinmingcheng : false,
+					shangpinfenlei : false,
+					shangpintupian : false,
+					shangpinpinpai : false,
+					shangpinguige : false,
+					shengchanchangjia : false,
+					shangpinxiangqing : false,
+					onelimittimes : false,
+					alllimittimes : false,
+					price : false,
+					thumbsupnum : false,
+					crazilynum : false,
+					clicknum : false,
+					discussnum : false,
+					onshelves : false,
+					storeupnum : false,
+				},
+				type: '',
+				userTableName: localStorage.getItem('UserTableName'),
+				ruleForm: {
+					shangpinmingcheng: '',
+					shangpinfenlei: '',
+					shangpintupian: '',
+					shangpinpinpai: '',
+					shangpinguige: '',
+					shengchanchangjia: '',
+					shangpinxiangqing: '',
+					onelimittimes: '',
+					alllimittimes: '',
+					price: '',
+					thumbsupnum: '',
+					crazilynum: '',
+					clicknum: '',
+					discussnum: '',
+					onshelves: 1,
+					storeupnum: '',
+				},
+				shangpinfenleiOptions: [],
+
+				rules: {
+					shangpinmingcheng: [
+						{ required: true, message: '鍟嗗搧鍚嶇О涓嶈兘涓虹┖', trigger: 'blur' },
+					],
+					shangpinfenlei: [
+						{ required: true, message: '鍟嗗搧鍒嗙被涓嶈兘涓虹┖', trigger: 'blur' },
+					],
+					shangpintupian: [
+					],
+					shangpinpinpai: [
+					],
+					shangpinguige: [
+					],
+					shengchanchangjia: [
+					],
+					shangpinxiangqing: [
+					],
+					onelimittimes: [
+						{ validator: this.$validate.isIntNumer, trigger: 'blur' },
+					],
+					alllimittimes: [
+						{ validator: this.$validate.isIntNumer, trigger: 'blur' },
+					],
+					price: [
+						{ required: true, message: '浠锋牸涓嶈兘涓虹┖', trigger: 'blur' },
+						{ validator: this.$validate.isNumber, trigger: 'blur' },
+					],
+					thumbsupnum: [
+						{ validator: this.$validate.isIntNumer, trigger: 'blur' },
+					],
+					crazilynum: [
+						{ validator: this.$validate.isIntNumer, trigger: 'blur' },
+					],
+					clicknum: [
+						{ validator: this.$validate.isIntNumer, trigger: 'blur' },
+					],
+					discussnum: [
+						{ validator: this.$validate.isIntNumer, trigger: 'blur' },
+					],
+					onshelves: [
+						{ validator: this.$validate.isIntNumer, trigger: 'blur' },
+					],
+					storeupnum: [
+						{ validator: this.$validate.isIntNumer, trigger: 'blur' },
+					],
+				},
+				centerType: false,
+			};
+		},
+		computed: {
+			sessionForm() {
+				return JSON.parse(localStorage.getItem('sessionForm'))
+			},
+
+
+
+		},
+		components: {
+		},
+		created() {
+			if(this.$route.query.centerType){
+				this.centerType = true
+			}
+			//this.bg();
+			let type = this.$route.query.type ? this.$route.query.type : '';
+			this.init(type);
+			this.baseUrl = this.$config.baseUrl;
+		},
+		methods: {
+			getMakeZero(s) {
+				return s < 10 ? '0' + s : s;
+			},
+			// 涓嬭浇
+			download(file ){
+				window.open(`${file}`)
+			},
+			// 鍒濆鍖?
+			init(type) {
+				this.type = type;
+				if(type=='cross'){
+					var obj = JSON.parse(localStorage.getItem('crossObj'));
+					for (var o in obj){
+						if(o=='shangpinmingcheng'){
+							this.ruleForm.shangpinmingcheng = obj[o];
+							this.ro.shangpinmingcheng = true;
+							continue;
+						}
+						if(o=='shangpinfenlei'){
+							this.ruleForm.shangpinfenlei = obj[o];
+							this.ro.shangpinfenlei = true;
+							continue;
+						}
+						if(o=='shangpintupian'){
+							this.ruleForm.shangpintupian = obj[o]?obj[o].split(",")[0]:'';
+							this.ro.shangpintupian = true;
+							continue;
+						}
+						if(o=='shangpinpinpai'){
+							this.ruleForm.shangpinpinpai = obj[o];
+							this.ro.shangpinpinpai = true;
+							continue;
+						}
+						if(o=='shangpinguige'){
+							this.ruleForm.shangpinguige = obj[o];
+							this.ro.shangpinguige = true;
+							continue;
+						}
+						if(o=='shengchanchangjia'){
+							this.ruleForm.shengchanchangjia = obj[o];
+							this.ro.shengchanchangjia = true;
+							continue;
+						}
+						if(o=='shangpinxiangqing'){
+							this.ruleForm.shangpinxiangqing = obj[o];
+							this.ro.shangpinxiangqing = true;
+							continue;
+						}
+						if(o=='onelimittimes'){
+							this.ruleForm.onelimittimes = obj[o];
+							this.ro.onelimittimes = true;
+							continue;
+						}
+						if(o=='alllimittimes'){
+							this.ruleForm.alllimittimes = obj[o];
+							this.ro.alllimittimes = true;
+							continue;
+						}
+						if(o=='price'){
+							this.ruleForm.price = obj[o];
+							this.ro.price = true;
+							continue;
+						}
+						if(o=='thumbsupnum'){
+							this.ruleForm.thumbsupnum = obj[o];
+							this.ro.thumbsupnum = true;
+							continue;
+						}
+						if(o=='crazilynum'){
+							this.ruleForm.crazilynum = obj[o];
+							this.ro.crazilynum = true;
+							continue;
+						}
+						if(o=='clicknum'){
+							this.ruleForm.clicknum = obj[o];
+							this.ro.clicknum = true;
+							continue;
+						}
+						if(o=='discussnum'){
+							this.ruleForm.discussnum = obj[o];
+							this.ro.discussnum = true;
+							continue;
+						}
+						if(o=='onshelves'){
+							this.ruleForm.onshelves = obj[o];
+							this.ro.onshelves = true;
+							continue;
+						}
+						if(o=='storeupnum'){
+							this.ruleForm.storeupnum = obj[o];
+							this.ro.storeupnum = true;
+							continue;
+						}
+					}
+				}else if(type=='edit'){
+					this.info()
+				}
+				// 鑾峰彇鐢ㄦ埛淇℃伅
+				this.$http.get(this.userTableName + '/session', {emulateJSON: true}).then(res => {
+					if (res.data.code == 0) {
+						var json = res.data.data;
+					}
+				});
+				this.$http.get('option/shangpinfenlei/shangpinfenlei', {}).then(res => {
+					if (res.data.code == 0) {
+						this.shangpinfenleiOptions = res.data.data;
+					}
+				});
+
+				if (localStorage.getItem('raffleType') && localStorage.getItem('raffleType') != null) {
+					localStorage.removeItem('raffleType')
+					setTimeout(() => {
+						this.onSubmit(null)
+					}, 300)
+				}
+			},
+
+			// 澶氱骇鑱斿姩鍙傛暟
+			// 澶氱骇鑱斿姩鍙傛暟
+			async info() {
+				await this.$http.get(`xianshangshangcheng/detail/${this.$route.query.id}`, {emulateJSON: true}).then(res => {
+					if (res.data.code == 0) {
+						this.ruleForm = res.data.data;
+					}
+				});
+			},
+			// 鎻愪氦
+			async onSubmit(subMitType=null) {
+				await this.$refs["ruleForm"].validate(async valid => {
+					if(valid) {
+						if(this.ruleForm.price<0){
+							this.$message.error("浠锋牸涓嶈兘杈撳叆璐熸暟");
+							return
+						}
+						if(this.ruleForm.alllimittimes<0){
+							this.$message.error("搴撳瓨涓嶈兘杈撳叆璐熸暟");
+							return
+						}
+						if(this.ruleForm.onelimittimes<0){
+							this.$message.error("鍗曟璐拱涓嶈兘杈撳叆璐熸暟");
+							return
+						}
+						if(!this.ruleForm.id) {
+							delete this.ruleForm.userid
+						}
+						if(this.type=='cross'){
+							var statusColumnName = localStorage.getItem('statusColumnName');
+							var statusColumnValue = localStorage.getItem('statusColumnValue');
+							if(statusColumnName && statusColumnName!='') {
+								var obj = JSON.parse(localStorage.getItem('crossObj'));
+								if(!statusColumnName.startsWith("[")) {
+									for (var o in obj){
+										if(o==statusColumnName){
+											obj[o] = statusColumnValue;
+										}
+									}
+									var table = localStorage.getItem('crossTable');
+									await this.$http.post(table+'/update', obj).then(res => {});
+								}
+							}
+						}
+
+						await this.$http.post(`xianshangshangcheng/${this.ruleForm.id?'update':this.centerType?'save':'add'}`, this.ruleForm).then(async res => {
+							if (res.data.code == 0) {
+								await this.$message({
+									message: '鎿嶄綔鎴愬姛',
+									type: 'success',
+									duration: 1500,
+									onClose: () => {
+										this.$router.go(-1);
+										
+									}
+								});
+							} else {
+								this.$message({
+									message: res.data.msg,
+									type: 'error',
+									duration: 1500
+								});
+							}
+						});
+					}
+				});
+			},
+			// 鑾峰彇uuid
+			getUUID () {
+				return new Date().getTime();
+			},
+			// 杩斿洖
+			back() {
+				this.$router.go(-1);
+			},
+			shangpintupianUploadChange(fileUrls) {
+				this.ruleForm.shangpintupian = fileUrls.replace(new RegExp(this.$config.baseUrl,"g"),"");
+			},
+		}
+	};
+</script>
+
+<style rel="stylesheet/scss" lang="scss" scoped>
+	.add-update-preview {
+		padding: 20px 10% 40px;
+		margin: 10px auto;
+		background: none;
+		width: 100%;
+		position: relative;
+		.add-update-form {
+			border: 0px solid #eee;
+			border-radius: 10px;
+			padding: 40px 10% 20px 10%;
+			background: none;
+			width: 100%;
+			position: relative;
+			.add-item.el-form-item {
+				border: 1px solid #46AC2E;
+				padding: 0;
+				margin: 0 0 24px;
+				background: none;
+				::v-deep .el-form-item__label {
+					padding: 0 10px 0 0;
+					color: #333;
+					white-space: nowrap;
+					font-weight: 500;
+					width: 200px;
+					font-size: 16px;
+					line-height: 40px;
+					text-align: right;
+				}
+				::v-deep .el-form-item__content {
+					margin-left: 200px;
+				}
+				.el-input {
+					width: 100%;
+				}
+				.el-input ::v-deep .el-input__inner {
+					border: 0 solid #000;
+					border-radius: 0px;
+					padding: 0 12px;
+					box-shadow: none;
+					outline: none;
+					color: #666;
+					width: 100%;
+					font-size: 16px;
+					height: 40px;
+				}
+				.el-input ::v-deep .el-input__inner[readonly="readonly"] {
+					border: 0;
+					cursor: not-allowed;
+					border-radius: 4px;
+					padding: 0 12px;
+					box-shadow: none;
+					outline: none;
+					color: #999;
+					width: 100%;
+					font-size: 16px;
+					height: 40px;
+				}
+				.el-input-number ::v-deep .el-input__inner {
+					text-align: left;
+					border: 0 solid #000;
+					border-radius: 0px;
+					padding: 0 12px;
+					box-shadow: none;
+					outline: none;
+					color: #666;
+					width: 100%;
+					font-size: 16px;
+					height: 40px;
+				}
+				.el-input-number ::v-deep .is-disabled .el-input__inner {
+					text-align: left;
+					border: 0;
+					cursor: not-allowed;
+					border-radius: 4px;
+					padding: 0 12px;
+					box-shadow: none;
+					outline: none;
+					color: #999;
+					width: 100%;
+					font-size: 16px;
+					height: 40px;
+				}
+				.el-input-number ::v-deep .el-input-number__decrease {
+					display: none;
+				}
+				.el-input-number ::v-deep .el-input-number__increase {
+					display: none;
+				}
+				.el-select {
+					width: 100%;
+				}
+				.el-select ::v-deep .el-input__inner {
+					border: 0 solid #000;
+					border-radius: 0px;
+					padding: 0 10px;
+					box-shadow: none;
+					outline: none;
+					color: rgba(64, 158, 255, 1);
+					width: 100%;
+					font-size: 14px;
+					height: 40px;
+				}
+				.el-select ::v-deep .is-disabled .el-input__inner {
+					border: 0;
+					cursor: not-allowed;
+					border-radius: 4px;
+					padding: 0 10px;
+					box-shadow: none;
+					outline: none;
+					color: #999;
+					background: #eee;
+					width: 100%;
+					font-size: 14px;
+					height: 40px;
+				}
+				.el-date-editor {
+					width: 100%;
+				}
+				.el-date-editor ::v-deep .el-input__inner {
+					border: 0 solid #000;
+					border-radius: 0px;
+					padding: 0 10px 0 30px;
+					box-shadow: none;
+					outline: none;
+					color: #666;
+					width: 100%;
+					font-size: 16px;
+					height: 40px;
+				}
+				.el-date-editor ::v-deep .el-input__inner[readonly="readonly"] {
+					border: 0;
+					cursor: not-allowed;
+					border-radius: 4px;
+					padding: 0 10px 0 30px;
+					box-shadow: none;
+					outline: none;
+					color: #999;
+					background: #eee;
+					width: 100%;
+					font-size: 16px;
+					height: 40px;
+				}
+				::v-deep .el-upload--picture-card {
+					background: transparent;
+					border: 0;
+					border-radius: 0;
+					width: auto;
+					height: auto;
+					line-height: initial;
+					vertical-align: middle;
+				}
+				::v-deep .upload .upload-img {
+					border: 1px solid #eee;
+					cursor: pointer;
+					border-radius: 0px;
+					color: #999;
+					width: 80px;
+					font-size: 26px;
+					line-height: 80px;
+					text-align: center;
+					height: 80px;
+				}
+				::v-deep .el-upload-list .el-upload-list__item {
+					border: 1px solid #eee;
+					cursor: pointer;
+					border-radius: 0px;
+					color: #999;
+					width: 80px;
+					font-size: 26px;
+					line-height: 80px;
+					text-align: center;
+					height: 80px;
+					font-size: 14px;
+					line-height: 1.8;
+				}
+				::v-deep .el-upload .el-icon-plus {
+					border: 1px solid #eee;
+					cursor: pointer;
+					border-radius: 0px;
+					color: #999;
+					width: 80px;
+					font-size: 26px;
+					line-height: 80px;
+					text-align: center;
+					height: 80px;
+				}
+				::v-deep .el-upload__tip {
+					color: #666;
+					font-size: 16px;
+				}
+				.el-textarea ::v-deep .el-textarea__inner {
+					border: 0 solid #000;
+					border-radius: 0px;
+					padding: 12px;
+					box-shadow: none;
+					outline: none;
+					color: #666;
+					width: 100%;
+					font-size: 16px;
+					height: auto;
+				}
+				.el-textarea ::v-deep .el-textarea__inner[readonly="readonly"] {
+					border: 0;
+					cursor: not-allowed;
+					border-radius: 4px;
+					padding: 12px;
+					box-shadow: none;
+					outline: none;
+					color: #999;
+					width: 100%;
+					font-size: 16px;
+					height: auto;
+				}
+				::v-deep .el-input__inner::placeholder {
+					color: #123;
+					font-size: 16px;
+				}
+				::v-deep textarea::placeholder {
+					color: #123;
+					font-size: 16px;
+				}
+				.editor {
+					background-color: #fff;
+					border-radius: 0;
+					padding: 0;
+					box-shadow: none;
+					margin: 0;
+					width: 100%;
+					border-color: #ccc;
+					border-width: 0;
+					border-style: solid;
+					height: auto;
+				}
+				.editor ::v-deep.ql-toolbar {
+					border: 1px solid #eee;
+					background: none;
+					border-width: 1px 1px 0;
+				}
+				.editor ::v-deep.ql-container {
+					border: 1px solid #eee;
+					background: none;
+					min-height: 180px;
+				}
+				.editor ::v-deep.ql-container .ql-blank::before {
+					color: #999;
+				}
+				.upload-img {
+					object-fit: cover;
+					width: 120px;
+					height: 120px;
+				}
+				.viewBtn {
+					border: 0;
+					cursor: pointer;
+					padding: 0 20px;
+					margin: 0;
+					color: #fff;
+					display: inline-block;
+					font-size: 14px;
+					line-height: 34px;
+					border-radius: 4px;
+					outline: none;
+					background: #46AC2E;
+					width: auto;
+					height: 34px;
+				}
+				.viewBtn:hover {
+					opacity: 0.7;
+				}
+				.unviewBtn {
+					border: 0;
+					cursor: pointer;
+					padding: 0 20px;
+					margin: 0;
+					color: #666;
+					display: inline-block;
+					font-size: 14px;
+					line-height: 34px;
+					border-radius: 4px;
+					outline: none;
+					background: #ddd;
+					width: auto;
+					height: 34px;
+				}
+				.unviewBtn:hover {
+					opacity: 0.8;
+				}
+			}
+			.add-btn-item {
+				padding: 0;
+				margin: 20px auto;
+				width: 100%;
+				text-align: center;
+				.submitBtn {
+					border: 1px solid #46AC2E;
+					cursor: pointer;
+					border-radius: 20px;
+					padding: 0 15px;
+					margin: 0 20px 0 0;
+					outline: none;
+					background: #46AC2E;
+					display: inline-block;
+					width: auto;
+					font-size: 14px;
+					line-height: 40px;
+					height: 40px;
+					.icon {
+						color: #fff;
+					}
+					.text {
+						color: #fff;
+						font-size: 16px;
+					}
+				}
+				.submitBtn:hover {
+					opacity: 0.7;
+					.icon {
+						color: #000;
+					}
+					.text {
+						color: #000;
+					}
+				}
+				.closeBtn {
+					border: 1px solid #000;
+					cursor: pointer;
+					border-radius: 20px;
+					padding: 0 15px;
+					margin: 0 20px 0 0;
+					outline: none;
+					background: none;
+					display: inline-block;
+					width: auto;
+					font-size: 14px;
+					line-height: 40px;
+					height: 40px;
+					.icon {
+						color: #000;
+						font-size: 18px;
+					}
+					.text {
+						color: #000;
+						font-size: 16px;
+					}
+				}
+				.closeBtn:hover {
+					opacity: 0.7;
+					.icon {
+					}
+					.text {
+					}
+				}
+			}
+		}
+	}
+	.el-date-editor.el-input {
+		width: auto;
+	}
+</style>
+
